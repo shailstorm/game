@@ -15,6 +15,47 @@ const (
 	maxHeight = 100
 )
 
+var names = []string{
+	"☀️", "☔", "☁️",
+	"❄️", "⛄", "⚡",
+	"🌀", "🌁", "🌊",
+	"🐱", "🐶", "🐭",
+	"🐹", "🐰", "🐺",
+	"🐸", "🐯", "🐨",
+	"🐻", "🐷", "🐽",
+	"🐮", "🐗", "🐵",
+	"🐒", "🐴", "🐎",
+	"🐫", "🐑", "🐘",
+	"🐼", "🐍", "🐦",
+	"🐤", "🐥", "🐣",
+	"🐔", "🐧", "🐢",
+	"🐛", "🐝", "🐜",
+	"🪲", "🐌", "🐙",
+	"🐠", "🐟", "🐳",
+	"🐋", "🐬", "🐄",
+	"🐏", "🐀", "🐃",
+	"🐅", "🐇", "🐉",
+	"🐐", "🐓", "🐕",
+	"🐖", "🐁", "🐂",
+	"🐲", "🐡", "🐊",
+	"🐪", "🐆", "🐈",
+	"🐩", "🐾", "💐",
+	"🌸", "🌷", "🍀",
+	"🌹", "🌻", "🌺",
+	"🍁", "🍃", "🍂",
+	"🌿", "🍄", "🌵",
+	"🌴", "🌲", "🌳",
+	"🌰", "🌱", "🌼",
+	"🌾", "🐚", "🌐",
+	"🌞", "🌝", "🌚",
+	"🌑", "🌒", "🌓",
+	"🌔", "🌕", "🌖",
+	"🌗", "🌘", "🌜",
+	"🌛", "🌔", "🌍",
+	"🌎", "🌏", "🌋",
+	"🌌", "⛅",
+}
+
 type frameMsg time.Time
 
 func animate() tea.Cmd {
@@ -33,7 +74,7 @@ func wait(d time.Duration) tea.Cmd {
 type model struct {
 	projectile *harmonica.Projectile
 	pos        harmonica.Point
-	mouseEvent tea.MouseEvent
+	mouseMsg   tea.MouseMsg
 }
 
 func (m model) Init() tea.Cmd {
@@ -41,9 +82,14 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
+	switch msg := msg.(type) {
+
 	case tea.KeyMsg:
 		return m, tea.Quit
+
+	case tea.MouseMsg:
+		m.mouseMsg = msg
+		return m, nil
 
 	// Step forward one frame
 	case frameMsg:
@@ -54,7 +100,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, animate()
-	case tea.MouseEvent:
 
 	default:
 		return m, nil
@@ -64,14 +109,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var out strings.Builder
 
-	for y := 0; y < int(m.pos.Y); y++ {
+	for y := 0; y < int(m.mouseMsg.Y); y++ {
 		out.WriteString("\n")
 	}
 
-	for x := 0; x < int(m.pos.X); x++ {
+	for x := 0; x < int(m.mouseMsg.X); x++ {
 		out.WriteString(" ")
 	}
-	out.WriteString(fmt.Sprintf("(%.2f, %.2f)", m.pos.X, m.pos.Y))
+	out.WriteString("x")
 
 	return out.String()
 }
