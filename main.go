@@ -2,25 +2,17 @@ package main
 
 import (
 	"fmt"
-	"math"
-	"math/rand"
 	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/harmonica"
-	"golang.org/x/exp/slices"
+	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	fps    = 60
-	spread = 5
-)
+// frame stuff
+const fps = 60
 
-var ascii = []string{"!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ";", "<", "=", ">", "?", "@", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\", "]", "^", "_", "`", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "{", "|", "}", "~"}
-var emoji = []string{"☀️", "☔", "☁️", "❄️", "⛄", "⚡", "🌀", "🌁", "🌊", "🐱", "🐶", "🐭", "🐹", "🐰", "🐺", "🐸", "🐯", "🐨", "🐻", "🐷", "🐽", "🐮", "🐗", "🐵", "🐒", "🐴", "🐎", "🐫", "🐑", "🐘", "🐼", "🐍", "🐦", "🐤", "🐥", "🐣", "🐔", "🐧", "🐢", "🐛", "🐝", "🐜", "🪲", "🐌", "🐙", "🐠", "🐟", "🐳", "🐋", "🐬", "🐄", "🐏", "🐀", "🐃", "🐅", "🐇", "🐉", "🐐", "🐓", "🐕", "🐖", "🐁", "🐂", "🐲", "🐡", "🐊", "🐪", "🐆", "🐈", "🐩", "🐾", "💐", "🌸", "🌷", "🍀", "🌹", "🌻", "🌺", "🍁", "🍃", "🍂", "🌿", "🍄", "🌵", "🌴", "🌲", "🌳", "🌰", "🌱", "🌼", "🌾", "🐚", "🌐", "🌞", "🌝", "🌚", "🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "🌜", "🌛", "🌔", "🌍", "🌎", "🌏", "🌋", "🌌", "⛅"}
-
-type frameMsg time.Time
+type frameMsg time.Time // repr a single animation frame
 
 func animate() tea.Cmd {
 	return tea.Tick(time.Second/fps, func(t time.Time) tea.Msg {
@@ -28,12 +20,15 @@ func animate() tea.Cmd {
 	})
 }
 
+// model
 type model struct {
-	cells       cellbuffer
-	projectiles []*harmonica.Projectile
+	board  board
+	width  int
+	height int
 }
 
 func (m model) Init() tea.Cmd {
+	m.board.init(60, 30)
 	return tea.Sequence(tea.ClearScreen, animate())
 }
 
@@ -44,41 +39,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.cells.init(msg.Width, msg.Height)
+		m.width = msg.Width
+		m.height = msg.Height
 		return m, nil
 
 	case tea.MouseMsg:
-		if !m.cells.ready() {
+		if !m.board.ready() {
 			return m, nil
 		}
-		angle := rand.Float64() * 2 * math.Pi
-		newProjectile := harmonica.NewProjectile(harmonica.FPS(fps),
-			harmonica.Point{X: float64(msg.X), Y: float64(msg.Y)},
-			harmonica.Vector{X: math.Cos(angle), Y: math.Sin(angle)},
-			harmonica.TerminalGravity,
-		)
-		m.projectiles = append(m.projectiles, newProjectile)
+
 		return m, nil
 
 	case frameMsg:
-		if !m.cells.ready() {
+		if !m.board.ready() {
 			return m, nil
-		}
-
-		for _, p := range m.projectiles {
-			m.cells.set(int(p.Position().X), int(p.Position().Y), " ")
-		}
-		for _, p := range m.projectiles {
-			p.Update()
-		}
-		for _, p := range m.projectiles {
-			x, y := int(p.Position().X), int(p.Position().Y)
-			c := m.cells.get(x, y)
-			if slices.Contains(ascii, c) {
-				m.cells.set(x, y, emoji[rand.Intn(len(emoji))])
-			} else {
-				m.cells.set(x, y, ascii[rand.Intn(len(ascii))])
-			}
 		}
 
 		return m, animate()
@@ -89,9 +63,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return m.cells.String()
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
+		lipgloss.NewStyle().Width(m.board.width()).Height(m.board.height()).Border(lipgloss.RoundedBorder()).Padding(0).Render(
+			m.board.String()))
 }
 
+// main
 func main() {
 	m := model{}
 
