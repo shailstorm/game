@@ -14,7 +14,7 @@ type board struct {
 	boardWidth int
 }
 
-func (c board) init(w, h int) {
+func (c *board) init(w, h int) {
 	if w == 0 {
 		return
 	}
@@ -31,7 +31,7 @@ func (c board) get(x, y int) string {
 	return c.cells[i]
 }
 
-func (c board) set(x, y int, v string) {
+func (c *board) set(x, y int, v string) {
 	i := y*c.boardWidth + x
 	if i > len(c.cells)-1 || x < 0 || y < 0 || x >= c.width() || y >= c.height() {
 		return

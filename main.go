@@ -28,7 +28,6 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	m.board.init(60, 30)
 	return tea.Sequence(tea.ClearScreen, animate())
 }
 
@@ -39,6 +38,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
+		m.board.init(60, 30)
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
@@ -63,6 +63,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	if !m.board.ready() {
+		return ""
+	}
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
 		lipgloss.NewStyle().Width(m.board.width()).Height(m.board.height()).Border(lipgloss.RoundedBorder()).Padding(0).Render(
 			m.board.String()))
@@ -71,8 +74,7 @@ func (m model) View() string {
 // main
 func main() {
 	m := model{}
-
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+	p := tea.NewProgram(&m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Uh oh:", err)
 		os.Exit(1)
